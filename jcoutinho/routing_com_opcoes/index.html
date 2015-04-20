@@ -29,16 +29,18 @@
 		</style>
 	</head>
 	
-    <body onload="init()">
+    <body>
     
 		<div id="wrapper">
 
 			<div id="selectbox" style="z-index:9999;position:fixed;margin-top:8;right:300px;top:8px;">
-		
-				<select id="selectpicker" class="selectpicker show-tick" data-style="btn-info" >
-					<option value="trsp_comprimento">trsp_comprimento</option>
-					<option data-divider="true"></option>
-				</select>
+
+                <div class="dropdown" id="selectpicker">
+                  <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">algoritmo<span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+                  </ul>
+                </div>
             </div>
 
         </div>
@@ -56,9 +58,6 @@
 
         <div id='mapa'  style="width:100%; height:100%; z-index:0"></div>
 
-        <div  id= 'container'  style="position:fixed; top:8px; right:600px; z-index:9999;">  
-            <input id= 'escolasSearch' type="text" class="typeahead tt-query" autocomplete="off" placeholder="Procurar escola..."/>  
-        </div>
 
     </div>
 </body>

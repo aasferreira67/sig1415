@@ -1,6 +1,6 @@
 <?php
 
-$dbconn = pg_connect("host=localhost  port=5432 dbname=routing user=postgres password=PASSWORD")
+$dbconn = pg_connect("host=localhost  port=5432 dbname=routing user=postgres password=geoserver")
 or die('Could not connect: ' . pg_last_error());
 
 

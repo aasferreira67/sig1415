@@ -1,6 +1,6 @@
 <?php
 // Connecting, selecting database
-$dbconn = pg_connect("host=127.0.0.1  port=5432 dbname=routing user=geoserver password=PASSWORD")
+$dbconn = pg_connect("host=127.0.0.1  port=5432 dbname=routing2 user=geoserver password=geoserver")
 or die('Could not connect: ' . pg_last_error());
  
 // Get Parameters
