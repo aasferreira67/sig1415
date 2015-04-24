@@ -16,7 +16,8 @@
 		<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.6.3/js/bootstrap-select.min.js"></script>
 		<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.js"></script>
 		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>	
-		<script src="./js/v3.3.0/build/ol.js"></script>
+		<!--<script src="./js/v3.3.0/build/ol.js"></script>-->
+		<script src="./js/v3.3.0/build/ol-debug.js"></script>
 		<script src="./js/main.js"></script>
 		<title>SIG 14/15</title>
 	</head>
@@ -41,20 +42,38 @@
             <div class="col-md-12">
                 <div class="btn-group-wrap">
                     <div class="btn-group" role="group" aria-label="Justified button group with nested dropdown">
-                      <a href="#" class="btn btn-danger" role="button" ng-click="clearRouting()"><span class="glyphicon glyphicon-trash"></span></a>
 
+                        <!-- algoritmos -->
                         <div class="btn-group" role="group">
                             <a href="#" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
                                {{algoritm.name || "Algoritmo"}} <span class="caret"></span>
                             </a>
                             <ul class="dropdown-menu" role="menu">
-                              <li ng-repeat="a in algoritms" ng-click="setAlgoritm(a)"><a href="#">{{a.key}}</a></li>
+                              <li ng-repeat="a in algoritms" ng-click="setAlgoritm(a)"><a href="#">{{a.name}}</a></li>
                             </ul>
                         </div>
+
+                        <!-- base layers -->
+                        <div class="btn-group" role="group">
+                            <a href="#" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                               {{baseLayer.name || "Mapa"}} <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu" role="menu">
+                              <li ng-repeat="l in _baseLayers" ng-click="setBaseLayer(l)"><a href="#">{{l.name}}</a></li>
+                            </ul>
+                        </div>
+
+                    </div>
+
+                    <div class="btn-group" role="group" aria-label="Justified button group with nested dropdown">
+                        <a href="#" class="btn btn-danger" role="button" ng-click="clearRouting()"><span class="glyphicon glyphicon-repeat"></span></a>
+
                     </div>
                 </div> <!-- /btn-group-wrap--> 
             </div> <!-- /col-md-12--> 
             </div> <!-- /row--> 
+
+
         </div> <!-- /topo--> 
 
         <div id="center">

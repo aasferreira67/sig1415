@@ -1,56 +1,64 @@
-window.app = {};
-var app = window.app;
 var ngapp = angular.module('sigApp', []);
-
 
 var maxExtent = ol.proj.transformExtent([-8.870560,41.029011,-8.323991,40.438993], 'EPSG:4326', 'EPSG:3857');
 
-
-var layers = [
+var routingLayers = [
     {
         'key':'routing:pgr_deaparab_lenght',
-        'name':'routing:pgr_deaparab_lenght',
+        'name':'Distancia',
         'format':'image/png'
     },
     {
         'key':'routing:pgr_deaparab_trsp_tempo',
-        'name':'routing:pgr_deaparab_trsp_tempo',
+        'name':'Tempo (TRSP)',
         'format':'image/png'
     },
     {
         'key':'routing:pgr_deaparab_trsp_comprimento',
-        'name':'routing:pgr_deaparab_trsp_comprimento',
+        'name':'Comprimento (TRSP)',
         'format':'image/png'
     }
 ];
 
 var baseLayers = [
-    new ol.layer.Tile({
-	    source: new ol.source.OSM({
-		    url:'http://{a-c}.tile.opencyclemap.org/cycle/{z}/{x}/{y}.png'
-	    })
-    }),
+    {
+        obj: new ol.layer.Tile({
+	        source: new ol.source.OSM({
+		        url:'http://{a-c}.tile.opencyclemap.org/cycle/{z}/{x}/{y}.png'
+	        })
+            }),
+        name: 'OpenCycleMap'
+    },
 
-    new ol.layer.Tile({
-		source: new ol.source.Stamen({
-        	layer: 'toner-lite'
-        }),
-		extent: maxExtent
-    }),
+    {
+        obj: new ol.layer.Tile({
+		    source: new ol.source.Stamen({
+            	layer: 'toner-lite'
+            }),
+		    extent: maxExtent
+            }),
+        name: 'Toner'
+    },
 
-    new ol.layer.Tile({
- 		source: new ol.source.MapQuest({
- 			layer: 'osm'
- 		}),
- 		extent: maxExtent
-    }),
+    {
+        obj: new ol.layer.Tile({
+     		source: new ol.source.MapQuest({
+     			layer: 'osm'
+     		}),
+     		extent: maxExtent
+            }),
+        name: 'OSM'
+    },
 
-    new ol.layer.Tile({
-		source: new ol.source.BingMaps({
-			key: 'AvBCehWm6Ep1VVa23v2BM-SsqJ1X3hx7l5CRWAj3ThglltxV7J87lENctywpvfsS',
-			imagerySet: 'Aerial'
-		})
-    })
+    {
+        obj: new ol.layer.Tile({
+		    source: new ol.source.BingMaps({
+			    key: 'AvBCehWm6Ep1VVa23v2BM-SsqJ1X3hx7l5CRWAj3ThglltxV7J87lENctywpvfsS',
+			    imagerySet: 'Aerial'
+		    })
+            }),
+        name: 'Bing/Aerial'
+    }
 ];
 
 
@@ -102,8 +110,21 @@ var endStyle = [
 
 
 ngapp.controller('mainController', function($scope) {
-    $scope.algoritms = layers;
+    var transform = ol.proj.getTransform('EPSG:3857', 'EPSG:4326');
+    $scope.algoritms = routingLayers;
+    $scope._baseLayers = baseLayers;
     $scope.algoritm = null;
+    $scope._routeLayer = new ol.layer.Image();
+    $scope._baseLayer = new ol.layer.Tile();
+    $scope.baseLayer = $scope._baseLayers[0];
+    $scope.startNode = new ol.Feature();
+    $scope.endNode = new ol.Feature();
+    $scope.startEndLayer = new ol.layer.Vector({
+	    source: new ol.source.Vector({
+      		features: [$scope.startNode, $scope.endNode]
+      	})
+    });
+
     $scope.view = new ol.View({
 	    projection: 'EPSG:3857',
 	    center:ol.proj.transform([-8.651697, 40.641121], 'EPSG:4326', 'EPSG:3857'),
@@ -112,17 +133,12 @@ ngapp.controller('mainController', function($scope) {
 		minZoom:13,
 		maxZoom:17
     });
+
     $scope.map = new ol.Map({
-        //interactions: ol.interaction.defaults().extend([new app.Drag()]),
-	    layers:[baseLayers[0]],
         target:'mapa',
         renderer:'canvas',
 	    view:$scope.view
     });
-
-    $scope.startNode = new ol.Feature();
-    $scope.endNode = new ol.Feature();
-
 
     $scope.setAlgoritm = function(a) {
         $scope.algoritm = a;
@@ -131,16 +147,23 @@ ngapp.controller('mainController', function($scope) {
         if ($scope.startNode.getGeometry() != null && $scope.endNode.getGeometry() != null) {
             var coordInicial = transform($scope.startNode.getGeometry().getCoordinates());
             var coordDestino = transform($scope.endNode.getGeometry().getCoordinates());
-            $scope.addResultado(coordInicial,coordDestino,$scope.algoritm.key, $scope.algoritm.format);
+            $scope.updateRoute(coordInicial,coordDestino,$scope.algoritm.key, $scope.algoritm.format);
         }
     };
 
+    $scope.setBaseLayer = function(a) {
+        console.log("a",a);
+        $scope.baseLayer = a;
+        $scope._baseLayer.setSource(a.obj.getSource());
+        console.log("Base layer set", a);
+    };
+
+
     $scope.clearRouting = function() {
-          $scope.startNode.setGeometry(null);
-          $scope.endNode.setGeometry(null);
-          // Remover layer "resultado".
-          $scope.map.removeLayer(resultado);
-          $scope.coordDestino = null;
+        $scope.startNode.setGeometry(null);
+        $scope.endNode.setGeometry(null);
+        $scope.coordDestino = null;
+        $scope._routeLayer.setSource(null);
     };
 
     $scope.findClosestNode = function(x, y, cb) {
@@ -158,7 +181,7 @@ ngapp.controller('mainController', function($scope) {
     };
 
 
-    $scope.addResultado = function (coordInicial,coordDestino, layer, format) {
+    $scope.updateRoute = function (coordInicial,coordDestino, layer, format) {
         viewparams = [
           'x1:' + coordInicial[0], 'y1:' + coordInicial[1],
           'x2:' + coordDestino[0], 'y2:' + coordDestino[1]
@@ -169,17 +192,11 @@ ngapp.controller('mainController', function($scope) {
         };
         params.viewparams = viewparams.join(';');
 
-        console.log(params);
-        resultado = new ol.layer.Image({
-          source: new ol.source.ImageWMS({
+        $scope._routeLayer.setSource(new ol.source.ImageWMS({
             name:'resultado',
             url: 'http://localhost:8080/geoserver/wms?',
             params: params
-          })
-        });   
-        //var extent = layerVetorial.getSource().getExtent();
-        //map.getView().fitExtent(extent, map.getSize());
-       $scope.map.addLayer(resultado);
+        }));
     };
 
 
@@ -188,16 +205,11 @@ ngapp.controller('mainController', function($scope) {
     $scope.startNode.setStyle(startStyle);
     $scope.endNode.setStyle(endStyle);
 
-    var layerVetorial = new ol.layer.Vector({
-	    source: new ol.source.Vector({
-      		features: [$scope.startNode, $scope.endNode]
-      	})
-    });
+    $scope.setBaseLayer($scope.baseLayer);
 
-    $scope.map.addLayer(layerVetorial);
-
-    var transform = ol.proj.getTransform('EPSG:3857', 'EPSG:4326');
-
+	$scope.map.addLayer($scope._baseLayer);
+    $scope.map.addLayer($scope.startEndLayer);
+    $scope.map.addLayer($scope._routeLayer);
 
     $scope.map.on('click', function(event) {
         var x = event.coordinate[0], y = event.coordinate[1];
@@ -206,7 +218,6 @@ ngapp.controller('mainController', function($scope) {
 		    var json_url = "./scripts/pontoMaisProximo.php?";
 		    json_url += "x=" + x;
 		    json_url += "&y=" + y;
-            console.log(json_url);
         	$.ajax({url: json_url, async:false, success: function(data){
 			    var data = jQuery.parseJSON(data);
 			    $scope.startNode.setGeometry(new ol.geom.Point([data[0].x, data[0].y]));
@@ -218,11 +229,12 @@ ngapp.controller('mainController', function($scope) {
              $scope.findClosestNode(x,y, function(x,y) {
                 $scope.endNode.setGeometry(new ol.geom.Point([x, y]));
                 $scope.coordDestino = transform($scope.endNode.getGeometry().getCoordinates());
-	            $scope.addResultado($scope.coordInicial, $scope.coordDestino, $scope.algoritm.key, $scope.algoritm.format);
+	            $scope.updateRoute($scope.coordInicial, $scope.coordDestino, $scope.algoritm.key, $scope.algoritm.format);
             });
-
         }
     });
+
+    $scope.setAlgoritm(routingLayers[0]);
 
 });
 
