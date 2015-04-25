@@ -1,3 +1,101 @@
+/*
+Ex. Como criar novo algoritmo routing com geoserver:
+1) correr a query (substituir XPTO por novo nome):
+    CREATE OR REPLACE FUNCTION public.pgr_deaparab_trsp_XPTO(IN tbl character varying, IN x1 double precision, IN y1 double precision, IN x2 double precision, IN y2 double precision, OUT seq integer, OUT gid integer, OUT name text, OUT heading double precision, OUT cost double precision, OUT geom geometry)
+      RETURNS SETOF record AS
+    $BODY$
+    DECLARE
+    sql text;
+    rec record;
+    source integer;
+    target integer;
+    point integer;
+    BEGIN
+    -- Find nearest node
+    EXECUTE 'SELECT id::integer FROM rede_viaria_bv_vertex
+    ORDER BY geom_vertex <-> ST_GeometryFromText(''POINT('
+    || x1 || ' ' || y1 || ')'',3857) LIMIT 1' INTO rec;
+    source := rec.id;
+    EXECUTE 'SELECT id::integer FROM rede_viaria_bv_vertex
+    ORDER BY geom_vertex <-> ST_GeometryFromText(''POINT('
+    || x2 || ' ' || y2 || ')'',3857) LIMIT 1' INTO rec;
+    target := rec.id;
+     
+    -- Shortest path query (TODO: limit extent by BBOX)
+    seq := 0;
+    sql := 'SELECT id, geom_way, osm_name AS name, rede_viaria_bv.cost, source, target, ST_Reverse(geom_way) AS flip_geom FROM ' ||
+    'pgr_trsp(''SELECT id, source::int, target::int, '
+    || 'length_km::float AS cost, reverse_cost_length_km::float AS reverse_cost FROM '
+    || quote_ident(tbl) || '''::text' || ', '
+    || source || ', '
+    || target || ', '
+    || 'true, true, '
+    || '''SELECT to_cost, to_edge AS target_id, from_edge||COALESCE('''',''''||via,'''''''') AS via_path FROM restrictions''::text), '
+    || quote_ident(tbl)
+    || ' WHERE id = id2 ORDER BY seq';
+     
+    -- Remember start point
+    point := source;
+     
+    FOR rec IN EXECUTE sql
+    LOOP
+    -- Flip geometry (if required)
+    IF ( point != rec.source ) THEN
+    rec.geom_way := rec.flip_geom;
+    point := rec.source;
+    ELSE
+    point := rec.target;
+    END IF;
+     
+    -- Calculate heading (simplified)
+    EXECUTE 'SELECT degrees( ST_Azimuth(
+    ST_StartPoint(''' || rec.geom_way::text || '''),
+    ST_EndPoint(''' || rec.geom_way::text || ''') ) )'
+    INTO heading;
+     
+    -- Return record
+    seq := seq + 1;
+    gid := rec.id;
+    name := rec.name;
+    cost := rec.cost;
+    geom := rec.geom_way;
+    RETURN NEXT;
+    END LOOP;
+    RETURN;
+    END;
+    $BODY$
+      LANGUAGE plpgsql VOLATILE STRICT
+      COST 100
+      ROWS 1000;
+    ALTER FUNCTION public.pgr_deaparab_trsp_XPTO(character varying, double precision, double precision, double precision, double precision)
+      OWNER TO postgres;
+
+
+2. No geoserver, criar um novo Layer:
+    2.1 Configure new SQL view...
+    2.2 
+        View Name: pgr_deaparab_trsp_XPTO
+        SQL:
+            SELECT ST_MakeLine (rota.geom) FROM
+            (SELECT geom FROM
+            pgr_deaparab_trsp_XPTO('rede_viaria_bv', %x1%, %y1%, %x2%, %y2%)
+            ORDER BY seq) AS rota
+
+    2.3 Guess parameters from SQL
+        x1...y2  
+            default value: 0      
+            Validation regular expression: ^-?[\d.]+$
+    2.4 Attributes refresh:
+        Type: LineString
+        SRID: 4326
+    2.5 Save
+    2.6 Declared SRS: EPSG:3857
+    2.7 SRS handling: Reproject native to declared
+    2.8 Compute from data
+    2.9 Compute from native bounds
+    2.10 Save
+*/
+
 var ngapp = angular.module('sigApp', []);
 
 var maxExtent = ol.proj.transformExtent([-8.870560,41.029011,-8.323991,40.438993], 'EPSG:4326', 'EPSG:3857');
@@ -11,6 +109,11 @@ var routingLayers = [
     {
         'key':'routing:pgr_deaparab_trsp_comprimento',
         'name':'Comprimento (TRSP)',
+        'format':'image/png'
+    },
+    {
+        'key':'routing:pgr_deaparab_trsp_xpto',
+        'name':'XPTO (TRSP)',
         'format':'image/png'
     }
 ];
