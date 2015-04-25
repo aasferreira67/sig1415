@@ -4,11 +4,6 @@ var maxExtent = ol.proj.transformExtent([-8.870560,41.029011,-8.323991,40.438993
 
 var routingLayers = [
     {
-        'key':'routing:pgr_deaparab_lenght',
-        'name':'Distancia',
-        'format':'image/png'
-    },
-    {
         'key':'routing:pgr_deaparab_trsp_tempo',
         'name':'Tempo (TRSP)',
         'format':'image/png'
@@ -65,12 +60,12 @@ var baseLayers = [
 var startStyle = [
 	new ol.style.Style({
 		image: new ol.style.Icon({
-			opacity: 0.75,
-			anchor: [0.5, 300],
+			opacity: 1.0,
+			anchor: [0.5, 200.0],
 			anchorXUnits: 'fraction',
 			anchorYUnits: 'pixels',
-			src: './img/start.png',
-			scale: 0.15
+			src: './img/bicycle-icon.png',
+			scale: 0.35
 		})
 	}),
 	new ol.style.Style({
@@ -88,11 +83,11 @@ var endStyle = [
 	new ol.style.Style({
 		image: new ol.style.Icon({
   			opacity: 0.75,
-  			anchor: [0.5, 90],
+  			anchor: [0.25, 500.0],
   			anchorXUnits: 'fraction',
   			anchorYUnits: 'pixels',
-  			src: './img/finish.png',
-  			scale: 0.5
+  			src: './img/map-pin.png',
+  			scale: 0.10
   			}),
 	}),
 	new ol.style.Style({
@@ -104,8 +99,6 @@ var endStyle = [
 		})
 	})
 ];
-
-
 
 
 
@@ -156,6 +149,11 @@ ngapp.controller('mainController', function($scope) {
         $scope.baseLayer = a;
         $scope._baseLayer.setSource(a.obj.getSource());
         console.log("Base layer set", a);
+    };
+
+
+    $scope.setSchool = function(a) {
+        alert("Escola escolhida");
     };
 
 
