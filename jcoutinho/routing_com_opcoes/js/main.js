@@ -112,8 +112,13 @@ var routingLayers = [
         'format':'image/png'
     },
     {
-        'key':'routing:pgr_deaparab_trsp_xpto',
-        'name':'XPTO (TRSP)',
+        'key':'routing:xpto',
+        'name':'XPTO',
+        'format':'image/png'
+    },
+    {
+        'key':'routing:dd',
+        'name':'dd (driving distance)',
         'format':'image/png'
     }
 ];
@@ -152,7 +157,7 @@ var baseLayers = [
         obj: new ol.layer.Tile({
 		    source: new ol.source.BingMaps({
 			    key: 'AvBCehWm6Ep1VVa23v2BM-SsqJ1X3hx7l5CRWAj3ThglltxV7J87lENctywpvfsS',
-			    imagerySet: 'Aerial'
+			    imagerySet: 'AerialWithLabels'
 		    })
             }),
         name: 'Bing/Aerial'
@@ -215,6 +220,7 @@ ngapp.controller('mainController', function($scope) {
     $scope.baseLayer = $scope._baseLayers[0];
     $scope.startNode = new ol.Feature();
     $scope.endNode = new ol.Feature();
+    $scope.distance = 1;
     $scope.startEndLayer = new ol.layer.Vector({
 	    source: new ol.source.Vector({
       		features: [$scope.startNode, $scope.endNode]
@@ -240,10 +246,15 @@ ngapp.controller('mainController', function($scope) {
         $scope.algoritm = a;
         console.log("Algoritm set", a, $scope.startNode, $scope.endNode);
 
+
         if ($scope.startNode.getGeometry() != null && $scope.endNode.getGeometry() != null) {
             var coordInicial = transform($scope.startNode.getGeometry().getCoordinates());
             var coordDestino = transform($scope.endNode.getGeometry().getCoordinates());
             $scope.updateRoute(coordInicial,coordDestino,$scope.algoritm.key, $scope.algoritm.format);
+        } else if ($scope.startNode.getGeometry() != null && $scope.algoritm.key == 'routing:dd') {
+            $scope.updateDD();
+        } else if ($scope.startNode.getGeometry() != null && $scope.algoritm.key == 'routing:xpto') {
+            $scope.updateDD();
         }
     };
 
@@ -300,6 +311,32 @@ ngapp.controller('mainController', function($scope) {
         }));
     };
 
+    $scope.$watch("distance", function(new_, val_) {
+        if (new_ != val_) {
+            $scope.updateDD();
+        }
+    });
+
+
+    $scope.updateDD = function() {
+        if ($scope.algoritm.key == 'routing:dd' || $scope.algoritm.key == 'routing:xpto') {
+            viewparams = [
+              'x:' + $scope.coordInicial[0], 'y:' + $scope.coordInicial[1], 
+              'distance:' + ((parseFloat($scope.distance) / 60.0))
+            ];
+            params = {
+                LAYERS: $scope.algoritm.key,
+                FORMAT: $scope.algoritm.format
+            };
+            params.viewparams = viewparams.join(';');
+
+            $scope._routeLayer.setSource(new ol.source.ImageWMS({
+                name:'resultado',
+                url: 'http://localhost:8080/geoserver/wms?',
+                params: params
+            }));
+        }
+    }
 
     // main()
 
@@ -325,13 +362,17 @@ ngapp.controller('mainController', function($scope) {
 		    }});
 		    $scope.coordInicial = transform($scope.startNode.getGeometry().getCoordinates());
 
+            if ($scope.algoritm.key == 'routing:dd' || $scope.algoritm.key == 'routing:xpto') {
+                $scope.updateDD();
+            }
 	    } else if ($scope.endNode.getGeometry() == null) {
-
-             $scope.findClosestNode(x,y, function(x,y) {
-                $scope.endNode.setGeometry(new ol.geom.Point([x, y]));
-                $scope.coordDestino = transform($scope.endNode.getGeometry().getCoordinates());
-	            $scope.updateRoute($scope.coordInicial, $scope.coordDestino, $scope.algoritm.key, $scope.algoritm.format);
-            });
+            if ($scope.algoritm.key == 'routing:dd' || $scope.algoritm.key == 'routing:xpto') {} else {
+                 $scope.findClosestNode(x,y, function(x,y) {
+                    $scope.endNode.setGeometry(new ol.geom.Point([x, y]));
+                    $scope.coordDestino = transform($scope.endNode.getGeometry().getCoordinates());
+	                $scope.updateRoute($scope.coordInicial, $scope.coordDestino, $scope.algoritm.key, $scope.algoritm.format);
+                });
+            }
         }
     });
 

@@ -60,7 +60,14 @@
                 </li>
              </ul>
 
-            <button type="button" class="btn btn-default navbar-btn" ng-click="clearRouting()"><span class="glyphicon glyphicon-repeat"></span></button>
+              <form class="navbar-form navbar-left" role="search">
+                <div class="form-group">
+                  <input type="number" class="form-control" placeholder="distance (int)" ng-model="distance" min="1" max="180">
+                </div>
+              </form>
+
+
+            <button type="button" class="btn btn-default navbar-btn navbar-right" ng-click="clearRouting()"><span class="glyphicon glyphicon-repeat"></span></button>
 
               <!-- school -->
               <form class="navbar-form navbar-right" role="search">
